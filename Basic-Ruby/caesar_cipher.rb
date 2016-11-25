@@ -1,6 +1,7 @@
 def caesar_cipher(string, factor)
   caesar = string.split("")
   letter = []
+  factor %= 26
 
   caesar.each do |c|
     change = c[0] + factor
