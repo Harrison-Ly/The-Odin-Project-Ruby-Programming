@@ -6,12 +6,16 @@ module MasterMind
     def matched(guess)
       guess = guess.split("")
       if guess == @secret_combo
-        puts "You guessed the correct code!"
-        puts "You WIN!"
+        result
         true
       else
-        checkpegs(guess)
+        false
       end
+    end
+
+    def result
+      puts "You guessed the correct code!"
+      puts "You WIN!"
     end
 
     def checkpegs(guess)
@@ -30,12 +34,23 @@ module MasterMind
           end
         end
       end
-      puts "White Peg #{white_peg}, Black Peg #{black_peg}"
+      arr = [white_peg, black_peg]
     end
 
     protected
     def initialize
-      @secret_combo = %W(B B R G)#4.times.map { $colours.sample }
+      @secret_combo = 4.times.map { $colours.sample } #{}%W(B B R G)
+    end
+  end
+
+  class CodeMakerHuman < CodeMaker
+    def initialize(code)
+      @secret_combo = code.split("")
+    end
+
+    def result
+      puts "Computer guessed the correct code!"
+      puts "You LOSE!"
     end
   end
 
@@ -43,6 +58,10 @@ module MasterMind
     attr_accessor :guess
     def initialize
       @guess = "asdfasdf"
+    end
+
+    def guessing(code_maker=false)
+      @guess = gets.chomp.upcase
     end
 
     def guessed?
@@ -74,12 +93,29 @@ module MasterMind
     end
   end
 
-  class Game
-    def initialize
-      @code_maker = CodeMaker.new
-      @code_breaker = CodeBreaker.new
-      @ended = false
+  class CodeBreakerAI < CodeBreaker
+    def guessing(code_maker)
+      #Stupid AI
+      puts @guess = 4.times.map { $colours.sample }.join("")
+      black_peg = code_maker.checkpegs(@guess)[1]
+    end
+  end
 
+  class Game
+    def initialize( option = "B" )
+      @ended = false
+      if option == "B"
+        @code_maker = CodeMaker.new
+        @code_breaker = CodeBreaker.new
+      else
+        human_secret_code = ""
+        until /^[RGBYOP]{4}$/.match(human_secret_code)
+          puts "Enter your secret code: (ex. RGBY)"
+          human_secret_code = gets.chomp.upcase
+        end
+        @code_maker = CodeMakerHuman.new(human_secret_code)
+        @code_breaker = CodeBreakerAI.new
+      end
       turns
     end
 
@@ -87,14 +123,15 @@ module MasterMind
       while !@ended
         puts ""
         puts "Enter your guess: [R]ed, [G]reen, [B]lue, [Y]ellow, [O]range, [P]urple"
-        @code_breaker.guess = gets.chomp.upcase
-        while @code_breaker.valid_guess?
+        @code_breaker.guessing(@code_maker)
+        if @code_breaker.valid_guess?
           if @code_maker.matched(@code_breaker.guess)
             @ended = true
             break
           else
+            pegs = @code_maker.checkpegs(@code_breaker.guess)
+            puts "White Peg #{pegs[0]}, Black Peg #{pegs[1]}"
             @ended = @code_breaker.guessed?
-            @code_breaker.guess = ""
           end
         end
 
@@ -105,7 +142,7 @@ module MasterMind
 
   def start
     intro
-    game = Game.new
+    game = Game.new(options)
   end
 
   def intro
@@ -116,6 +153,21 @@ module MasterMind
     puts "Good Luck!"
     puts ""
   end
+
+  def options
+    answer = ""
+    selection = %W(M B)
+    while !(selection.include?(answer))
+      puts "Do you want to be a Code[M]aker or Code[B]reaker?"
+      answer = gets.chomp.upcase
+      if not selection.include?(answer)
+        puts "Please enter [M] or [B]"
+      end
+    end
+    answer
+  end
+
+
 end
 
 include MasterMind
